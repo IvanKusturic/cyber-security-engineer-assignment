@@ -1,57 +1,106 @@
-# Vio.com Cyber Security Engineer assignment
+# Infrastructure Provisioning
 
-## Introduction
+This project is a solution for a Cyber Security Assignment and includes the provisioning of AWS infrastructure, setting up the WireGuard server, and configuring the WireGuard client.
 
-This assignment is part of the recruitment process for the Cyber Security Engineer at Vio.com. The purpose is to assess the technical skills of the candidates in a generic scenario.
+## Folder Structure
 
-> **_NOTE_**: Please, read carefully all the instructions before starting to work on your solution and feel free to contact us if you have any questions.
+- **Root Directory**: Contains Terraform files for infrastructure provisioning.
+- **client_configs/**: Contains the template for the WireGuard client configuration file.
+- **scripts/**: Contains scripts for initializing the HTTP server (`http-init-script.sh`) and an interactive script for WireGuard installation (`wireguard-installation.sh`).
 
-## Assignment
+## Getting Started
 
-### Scenario
+### Prerequisites
 
-A product team at Vio.com has a sensitive HTTP service that their want to deploy in a private subnet. However, they also want to access the service from their laptop. 
+- Terraform installed on a local machine.
+- Access to an AWS account and the AWS CLI configured.
+- SSH key pair for secure access (created during the Terraform provisioning process).
 
-They asked you to help with such problem. Before recommending a design to the team, you decided to create a PoC using Wireguard, to establish a secure VPN connection from the engineer's laptop to the private subnet in AWS.
+### Provisioning the Infrastructure
 
-As a Senior Cyber Security Engineer, your task is to implement the PoC to demonstrated that such design is viable.
+Clone this repository to a local machine to get started.
 
-### Goal
+```
+git clone https://github.com/IvanKusturic/cyber-security-engineer-assignment.git
+cd cyber-security-engineer-assignment
+```
 
-Set up a canonical VPC in AWS, and deploy the VPN server in the public subnet. Set up WireGuard so that it works as a gateway for any service deployed in the VPC. 
+Run the following command to initialize Terraform and download the necessary providers.
 
-An engineer should be able to use curl from their laptop to access an HTTP server deployed in the private subnet through the tunnel, with only the private IP of the service.
+```
+terraform init
+```
 
-### Part 1 - AWS Infrastructure Setup with Terraform
+Provision the infrastructure with the following command.
 
-- Write Terraform code to set up the necessary AWS infrastructure, including a Virtual Private Cloud (VPC), public/private subnet, and WireGuard instance.
+```
+terraform apply
+```
 
-- Set up WireGuard interfaces, IP addresses, and routing.
+- Confirm the action by typing `yes` when prompted.
 
-- Configure security groups to allow WireGuard traffic.
+After successful provisioning, note the outputs provided by Terraform. These include the WireGuard server's public and private IP addresses, and the HTTP server's private IP address.
 
-- Allow only necessary traffic, restricting other inbound and outbound connections.
+### Setting Up the WireGuard Server
 
-### Part 2 - Engineer's Laptop Configuration:
+Use `scp` to transfer the `wireguard-install.sh` script to WireGuard server.
 
-- Provide instructions or scripts for the engineer to configure WireGuard on their laptop.
+```
+scp -i wireguard-key-pair scripts/wireguard-install.sh ubuntu@<wireguard_public_ip>:/home/ubuntu
+```
 
-### Tips
+Connect to WireGuard server to run the installation script.
 
-- The sensitive HTTP service doesn’t need to be provisioned with Terraform, you can manually provision an EC2 instance running any HTTP service in the private subnet to perform tests.
+```
+ssh -i wireguard-key-pair ubuntu@<wireguard_public_ip>
+```
 
-- You can use a local terraform state, no need to configure the S3 backend.
+Execute the interactive script and input the required values as prompted.
 
-- You can use terraform AWS modules to speed up the process.
+```
+sudo ./wireguard-install.sh
+```
 
-- It’s OK if you need to redeploy the VPN server every time we need to add a peer public key.
+Follow the prompts for configuration as detailed below. Ensure you input the correct information at each step for a successful configuration.
 
-- It’s also OK if we need to reconfigure the client every time the VPN server is recreated, but we would consider a nice to have if that is not the case.
+- **IPv4 or IPv6 public address**: Use the WireGuard public IP address.
+- **Public interface**: The default value `eth0` is fine.
+- **WireGuard interface name**: The internal WireGuard interface, the default value `wg0` is fine.
+- **Server WireGuard IPv4**: Enter a valid value within the WireGuard server's subnet (10.0.1.0/24).
+- Server WireGuard IPv6: Leave as is.
+- **Server WireGuard port [1-65535]**: Set to `51820` to comply with the security group rules.
+- **First DNS resolver to use for the clients**: Leave as is.
+- **Second DNS resolver to use for the clients (optional)**: Leave as is.
+- **Allowed IPs list for generated clients**: Leave as is for this use case.
 
-## Submission
+Choose `OK` to restart the selected services.
 
-The assignment should be submitted as a fork of this repository. You should provide the source code, with a detailed README on how to use the solution.
+- **Client name**: This is the name of the WireGuard client. A configuration file will be generated with this name.
+- **Client WireGuard IPv4**: Enter a valid value within the WireGuard server's subnet (10.0.1.0/24).
+- **Client WireGuard IPv6**: Leave as is.
 
-Additionally, provide a brief document summarizing the steps taken, any challenges faced, and potential improvements for future implementations. Finally, explain the result of the PoC, should the product team adopt this design?
+Once the script execution is complete, it will output the path to the generated client configuration file `/home/ubuntu/wg0-client-<clientname.conf>`. Follow the steps below to use this configuration on a local machine.
 
-> **_NOTE_**: You have between two and four hours to complete and submit this technical assessment.
+### Retrieving the Client Configuration
+
+Display the contents of the generated client configuration file.
+
+```
+cat /home/ubuntu/wg0-client-<clientname>.conf
+```
+
+Rename the local configuration file to match the client name used during setup and ensure the contents are correct.
+
+## Client Configuration
+
+To connect to the WireGuard VPN:
+
+1. **Install WireGuard**: Download and install the WireGuard application on a client device.
+
+2. **Import Configuration**: Open the WireGuard application, choose "Import tunnel(s) from file," and select the edited configuration file.
+
+3. **Activate the Connection**: Click "Activate" to establish the VPN connection.
+
+4. **Test the Solution**: Verify the setup by pinging the HTTP server's private IP and accessing it via `curl`.
+
+**Enjoy!** 🎉
