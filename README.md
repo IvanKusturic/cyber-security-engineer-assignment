@@ -6,7 +6,7 @@ This project is a solution for a Cyber Security Assignment and includes the prov
 
 - **Root Directory**: Contains Terraform files for infrastructure provisioning.
 - **client_configs/**: Contains the template for the WireGuard client configuration file.
-- **scripts/**: Contains scripts for initializing the HTTP server (`http-init-script.sh`) and an interactive script for WireGuard installation (`wireguard-installation.sh`).
+- **scripts/**: Contains scripts for initializing the HTTP server (`http-init-script.sh`) and an interactive script for WireGuard installation (`wireguard-install.sh`).
 
 ## Getting Started
 
